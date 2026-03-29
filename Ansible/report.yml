@@ -1,0 +1,13 @@
+- name: Отчет по Дебиан
+  hosts: $hosts
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+  roles:
+    - package_version_audit
+    - user_report
+    - kernel_check

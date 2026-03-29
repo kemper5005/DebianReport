@@ -1,0 +1,23 @@
+- name: Сбор системных данных
+  ansible.builtin.getent:
+    database: "{{ item }}"
+  loop: [passwd, shadow]
+  become: yes
+
+- name: Получение вывода lastlog
+  ansible.builtin.command: lastlog
+  register: lastlog_output
+  changed_when: false
+  become: yes
+
+- name: Парсинг данных через шаблон
+  set_fact:
+    host_csv_rows: "{{ lookup('template', 'parse_users.j2') | from_yaml }}"
+
+- name: Запись CSV
+  delegate_to: localhost
+  run_once: yes
+  ansible.builtin.template:
+    src: report.csv.j2
+    dest: "{{ user_report_path }}"
+    mode: '0644'

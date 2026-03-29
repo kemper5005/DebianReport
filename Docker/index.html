@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель отчетов</title>
+    <link href="lib/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #f0f2f5; 
+            padding-top: 50px; 
+            font-family: 'Inter', system-ui, sans-serif; 
+        }
+        /* Центрируем контейнер с карточками */
+        #menuContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .report-card {
+            transition: all 0.2s ease-in-out;
+            text-decoration: none;
+            color: #1a1d20;
+            display: block;
+            border: 1px solid #e0e4e8;
+            border-radius: 8px;
+            background: white;
+            width: 100%;
+            max-width: 500px; /* Фиксированная ширина карточки */
+            margin-bottom: 20px; /* Отступ между карточками */
+        }
+        .report-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            border-color: #0d6efd;
+            color: #0d6efd;
+        }
+        h2 { font-weight: 700; color: #212529; letter-spacing: -0.5px; }
+        .card-title { font-weight: 600; font-size: 1.2rem; color: #0d6efd; }
+        .text-muted { color: #6c757d !important; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2 class="text-center mb-5">Аналитическая отчетность</h2>
+
+    <div id="menuContainer"></div>
+</div>
+
+<script>
+    const reports = [
+        { file: 'data.csv', title: 'Обновление ядра', desc: 'Мониторинг патчей системы' },
+        { file: 'package_version.csv', title: 'Обновление приложений', desc: 'Мониторинг доступности версий' },
+        { file: 'users_report.csv', title: 'Учетные записи', desc: 'Аудит входов' }
+    ];
+
+    const container = document.getElementById('menuContainer');
+    container.innerHTML = reports.map(r => `
+        <a href="templates/report.html?file=${r.file}&title=${encodeURIComponent(r.title)}" class="card p-4 report-card">
+            <div>
+                <div class="card-title mb-1">${r.title}</div>
+                <div class="text-muted small">${r.desc}</div>
+            </div>
+        </a>
+    `).join('');
+</script>
+</body>
+</html>

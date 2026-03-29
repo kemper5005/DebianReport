@@ -1,0 +1,38 @@
+- name: Получаем список всех IP адресов
+  set_fact:
+    all_ips: "{{ ansible_all_ipv4_addresses | join(';') }}"
+
+- name: Получаем доступные обновления пакетов
+  command: "apt list --upgradable"
+  register: apt_list
+  changed_when: false
+
+- name: Фильтруем доступные обновления ядра
+  set_fact:
+    kernel_updates: "{{ apt_list.stdout_lines | select('search', 'linux-image-') | list }}"
+
+- name: Проверка наличия обновлений ядра
+  set_fact:
+    kernel_update_status: "{{ 'Доступно обновление' if kernel_updates | length > 0 else 'Нет обновлений' }}"
+
+- name: Добавляем заголовки
+  lineinfile:
+    path: "{{ csv_file }}"
+    line: "Server,IPs,Distribution,Kernel,Update_Kernel"
+    insertbefore: BOF
+    create: yes
+  delegate_to: localhost
+  run_once: true
+
+- name: Формируем строку для CSV
+  set_fact:
+    output_line: "{{ inventory_hostname }},{{ all_ips }},{{ ansible_distribution }} {{ ansible_distribution_version }},{{ ansible_kernel }},{{ kernel_update_status }}"
+
+- name: Обновляем или создаём запись в CSV
+  lineinfile:
+    path: "{{ csv_file }}"
+    regexp: "^{{ ansible_fqdn }},"
+    line: "{{ output_line }}"
+    create: yes
+  delegate_to: localhost
+

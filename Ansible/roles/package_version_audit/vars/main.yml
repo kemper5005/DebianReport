@@ -1,0 +1,10 @@
+apps:
+  - nginx
+  - sudo
+  - libpam-modules
+  - openssh-server
+  - openssl
+  - systemd
+  - open-vm-tools
+  - parsec
+  - astra-safebox

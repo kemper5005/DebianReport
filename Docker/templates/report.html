@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчет</title>
+    <link href="../lib/bootstrap.min.css" rel="stylesheet">
+    <script src="../lib/papaparse.min.js"></script>
+    <style>
+        /* ГАРАНТИРОВАННЫЕ СТИЛИ ДЛЯ РАССТОЯНИЙ */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        body { 
+            display: flex; 
+            flex-direction: column; 
+            padding: 15px; 
+            box-sizing: border-box; 
+        }
+        
+        .main-container { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 0; 
+        }
+
+        /* ШАПКА: УПРАВЛЕНИЕ РАССТОЯНИЕМ */
+        .header-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px; /* Отступ от таблицы */
+        }
+
+        .btn-back {
+            display: inline-block;
+            padding: 7px 15px;
+            margin-right: 25px; /* РАССТОЯНИЕ МЕЖДУ КНОПКОЙ И ЗАГОЛОВКОМ */
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #333;
+            background: #fff;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        .btn-back:hover { background: #f0f0f0; border-color: #adb5bd; }
+
+        .title-group {
+            flex-grow: 0;
+            margin-right: 30px; /* РАССТОЯНИЕ МЕЖДУ ЗАГОЛОВКОМ И ПОИСКОМ */
+        }
+
+        .title-group h4 { margin: 0; font-size: 1.4rem; color: #212529; font-weight: 600; }
+        .last-modified { font-size: 0.8rem; color: #6c757d; margin-top: 5px; font-style: italic; }
+
+        .search-field {
+            margin-left: auto; /* ПРИЖАТЬ ПОИСК К ПРАВОМУ КРАЮ */
+            padding: 8px 12px;
+            width: 380px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            outline: none;
+        }
+        .search-field:focus { border-color: #86b7fe; box-shadow: 0 0 0 3px rgba(13,110,253,.15); }
+
+        /* ТАБЛИЦА */
+        .table-area { 
+            flex: 1; 
+            overflow: auto; 
+            border: 1px solid #dee2e6; 
+            border-radius: 4px;
+        }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th { 
+            position: sticky; 
+            top: 0; 
+            background: #212529; 
+            color: white; 
+            padding: 12px; 
+            text-align: left; 
+            font-size: 14px;
+            z-index: 10;
+        }
+        td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 14px; white-space: nowrap; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f4f9; }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="header-row">
+        <a href="../index.html" class="btn-back">← Меню</a>
+        
+        <div class="title-group">
+            <h4 id="pageTitle">Загрузка...</h4>
+            <div id="fileDate" class="last-modified">Проверка даты...</div>
+        </div>
+
+        <input type="text" id="searchInput" class="search-field" placeholder="Быстрый поиск по таблице...">
+    </div>
+
+    <div class="table-area">
+        <table>
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody">
+                <tr><td style="text-align:center; padding: 50px;">Загрузка данных из CSV...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const fileName = params.get('file') || 'data.csv';
+    const filePath = `../data/${fileName}`;
+    document.getElementById('pageTitle').innerText = params.get('title') || 'Отчет';
+
+    // 1. Дата обновления
+    fetch(filePath, { method: 'HEAD' }).then(res => {
+        const modDate = res.headers.get('Last-Modified');
+        document.getElementById('fileDate').innerText = modDate 
+            ? `Данные от: ${new Date(modDate).toLocaleString('ru-RU')}`
+            : "Дата обновления неизвестна";
+    }).catch(() => document.getElementById('fileDate').innerText = "");
+
+    // 2. CSV Данные
+    let tableData = [];
+    Papa.parse(filePath, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(res) {
+            tableData = res.data;
+            render(tableData);
+        },
+        error: () => {
+            document.getElementById('tableBody').innerHTML = `<tr><td style="color:red; text-align:center">Файл ${fileName} не найден в папке data</td></tr>`;
+        }
+    });
+
+    function render(data) {
+        const head = document.getElementById('tableHead');
+        const body = document.getElementById('tableBody');
+        if (!data || data.length === 0) {
+            body.innerHTML = '<tr><td style="text-align:center">Нет данных</td></tr>';
+            return;
+        }
+        const cols = Object.keys(data[0]);
+        head.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
+        body.innerHTML = data.map(row => `<tr>${cols.map(c => `<td>${row[c] || ''}</td>`).join('')}</tr>`).join('');
+    }
+
+    // 3. Поиск
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        const val = e.target.value.toLowerCase();
+        const filtered = tableData.filter(row => 
+            Object.values(row).some(v => String(v).toLowerCase().includes(val))
+        );
+        render(filtered);
+    });
+</script>
+</body>
+</html>
+

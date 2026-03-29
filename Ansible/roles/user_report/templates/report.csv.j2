@@ -1,0 +1,8 @@
+Server,UserName,LastLogin
+{% for host in ansible_play_hosts %}
+{% if hostvars[host].host_csv_rows is defined %}
+{% for row in hostvars[host].host_csv_rows %}
+{{ row }}
+{% endfor %}
+{% endif %}
+{% endfor %}

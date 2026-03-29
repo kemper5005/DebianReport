@@ -1,0 +1,35 @@
+- name: Получить список установленных пакетов
+  package_facts:
+    manager: auto
+
+- name: Проверка доступности обновлений
+  apt:
+    name: "{{ item }}"
+    state: latest
+  check_mode: yes
+  become: yes
+  register: chk
+  loop: "{{ apps }}"
+  when: item in ansible_facts.packages
+
+- name: Собрать данные в массив
+  set_fact:
+    host_csv_rows: "{{ host_csv_rows | default([]) + [ inventory_hostname ~ ',' ~ item.item ~ ',Доступно обновление' ] }}"
+  loop: "{{ chk.results }}"
+  loop_control:
+    loop_var: item
+  when: item.changed is defined and item.changed
+
+- name: Сохранить CSV
+  delegate_to: localhost
+  run_once: yes
+  copy:
+    dest: "{{ report }}"
+    content: |
+      Server,Package,Update_Package
+      {% for host in ansible_play_hosts %}
+      {% for row in hostvars[host].host_csv_rows | default([]) %}
+      {{ row }}
+      {% endfor %}
+      {% endfor %}
+    mode: '0644'

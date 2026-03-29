@@ -1,0 +1,34 @@
+{% set rows = [] %}
+{# 1. Парсим lastlog в словарь #}
+{% set last_logins = {} %}
+{% for line in lastlog_output.stdout_lines[1:] %}
+  {% set parts = line.split() %}
+  {% if parts | length >= 1 %}
+    {% set user_name = parts[0] %}
+    {% if 'Never' in line or '**' in line %}
+      {% set login_date = 'never' %}
+    {% else %}
+      {% set login_date = parts[-5:] | join(' ') %}
+    {% endif %}
+    {% set _ = last_logins.update({user_name: login_date}) %}
+  {% endif %}
+{% endfor %}
+
+{# 2. Сбор данных #}
+{% for user, info in ansible_facts.getent_passwd.items() %}
+  {% set uid = info.1 | int %}
+  {% set shell = info.5 %}
+  {% if uid >= 1000 and shell not in ['/usr/sbin/nologin', '/bin/false', '/usr/bin/false'] and user != 'nobody' %}
+    
+#    {# Собираем все IP в одну строку через пробел #}
+#    {% set all_ips = ansible_all_ipv4_addresses | join(' ') %}
+    
+    {% set last_login = last_logins[user] | default('unknown') %}
+
+    {# Формируем строку: Server, UserName, LastLogin #}
+    {% set row = inventory_hostname ~ ',' ~ user ~ ',' ~ last_login %}
+    {% set _ = rows.append(row) %}
+  {% endif %}
+{% endfor %}
+
+{{ rows | to_yaml }}

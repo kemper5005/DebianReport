@@ -1,0 +1,12 @@
+services:
+  web-report:
+    image: nginx:alpine
+    container_name: csv_report_local
+    ports:
+      - "80:80"
+    volumes:
+      - ./data:/usr/share/nginx/html/data:ro
+      - ./lib:/usr/share/nginx/html/lib:ro
+      - ./templates:/usr/share/nginx/html/templates:ro
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+    restart: always
